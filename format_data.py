@@ -44,11 +44,11 @@ def preprocess_nyt10(infile):
         logger.info("Finish write %s" % outfile)
         """
         Generate test and train data for word embedding
+        For more detail, check: https://github.com/thunlp/OpenKE#data
         """
         """
         Convert entities to id
         """
-
         entity_list = e1_list + e2_list
         le.fit(entity_list)
         entities_list = le.classes_
