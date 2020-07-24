@@ -137,3 +137,6 @@ data
 
 # Develop
 dev_*
+
+Hidden File
+.*

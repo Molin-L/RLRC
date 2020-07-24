@@ -21,6 +21,7 @@ import logging
 from logger import logger
 logger = logging.getLogger(__name__)
 
+# Set validation data ratio
 valid_ratio = 0.1
 
 
@@ -173,7 +174,8 @@ def preprocess_nyt10(inPath):
 
 
 if __name__ == "__main__":
-    # preprocess_nyt10('data/NYT10')
-    # _clean_entity('/Users/meow/Documents/Projects/UoG_Proj/RLRC/data/shrink/entity2id.txt')
+    preprocess_nyt10('data/NYT10')
+    _clean_entity(
+        '/Users/meow/Documents/Projects/UoG_Proj/RLRC/data/shrink/entity2id.txt')
     _valid_set(
         "/Users/meow/Documents/Projects/UoG_Proj/RLRC/data/shrink/train.json")
