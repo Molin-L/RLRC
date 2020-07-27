@@ -12,9 +12,12 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
+from transformers import (BertTokenizer, PretrainedModel)
+
+additional_special_tokens = ['[E1]', '[/E1]', '[E2]', '[/E2]']
 
 
-class RC_CNN(nn.module):
+class RC_CNN(nn.Module):
     def __init__(self):
         pass
 
@@ -23,10 +26,6 @@ class RC_CNN(nn.module):
 
 
 if __name__ == "__main__":
-    with open("data/NYT10/RE/vec.bin", 'rb') as f:
-        i = 0
-        for line in f.readlines():
-            print(line.decode("utf-8", "ignore"))
-            i += 1
-            if i > 10:
-                break
+
+    tokenizer = BertTokenizer.from_pretrained(
+        'bert-base-uncased', do_lower_case=True, additional_special_tokens=additional_special_tokens)
