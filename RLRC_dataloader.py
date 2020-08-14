@@ -26,6 +26,7 @@ def get_BertData():
             # torch.cat(attention_masks, dim=0)
             attention_masks = pickle.load(f)
         return input_ids, attention_masks, train_labels
+    print('Create BertData from scratch.')
     train_data = input_data()
     pretrain_model = "distilbert-base-uncased"
     tokenizer = DistilBertTokenizer.from_pretrained(
