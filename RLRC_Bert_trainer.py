@@ -1,11 +1,16 @@
 import torch
-import wandb
-from RLRC_Bert_model import RC_BERT
-from transformers import AdamW
+
+
+from transformers import AdamW, get_linear_schedule_with_warmup
 import random
 import numpy as np
 import torch.nn as nn
 from utils import format_time
+import time
+from tqdm import tqdm
+import wandb
+import RLRC_dataloader
+from RLRC_Bert_model import RC_BERT
 
 # This training code is based on the `run_glue.py` script here:
 # https://github.com/huggingface/transformers/blob/5bfcd0485ece086ebcbed2d008813037968a9e58/examples/run_glue.py#L128
@@ -25,26 +30,32 @@ training_stats = []
 loss_fn = nn.CrossEntropyLoss()
 
 
-def train(wb_config, train_dataloader):
-    config = wb_config.config
+def train(wb_config, train_dataloader, validation_dataloader):
+    config = wb_config
     # print(config)
     model = RC_BERT(config)
     optimizer = AdamW(
         model.parameters(),
-        lr=wb_config.lr,
+        lr=wb_config['lr'],
         eps=1e-8
     )
+    total_steps = len(train_dataloader) * config['epochs']
+    print(total_steps)
+    # Create the learning rate scheduler.
+    scheduler = get_linear_schedule_with_warmup(optimizer,
+                                                num_warmup_steps=0,  # Default value in run_glue.py
+                                                num_training_steps=total_steps)
 
     if torch.cuda.is_available():
-        .
         device = torch.device("cuda")
         print('There are %d GPU(s) available.' % torch.cuda.device_count())
         print('We will use the GPU:', torch.cuda.get_device_name(0))
     else:
         print('No GPU available, using the CPU instead.')
         device = torch.device("cpu")
-
-    for epoch_i in range(config.epochs):
+    model.to(device)
+    epochs = config['epochs']
+    for epoch_i in range(config['epochs']):
         wandb.watch(model)
         print("")
         print('======== Epoch {:} / {:} ========'.format(epoch_i + 1, epochs))
@@ -52,7 +63,7 @@ def train(wb_config, train_dataloader):
         t0 = time.time()
         total_loss, batch_loss, batch_counts = 0, 0, 0
         model.train()
-        for step, batch in enumerate(train_dataloader):
+        for step, batch in enumerate(tqdm(train_dataloader)):
             # Progress update every 40 batches.
             batch_counts += 1
             if step % 40 == 0 and not step == 0:
@@ -89,29 +100,12 @@ def train(wb_config, train_dataloader):
             # arge given and what flags are set. For our useage here, it returns
             # the loss (because we provided labels) and the "logits"--the model
             # outputs prior to activation.
-            logits = model(b_input_ids,
-                           attention_mask=b_input_mask
-                           )
+            logits = model(b_input_ids, b_input_mask)
             loss = loss_fn(logits, b_labels)
-            # Accumulate the training loss over all of the batches so that we can
-            # calculate the average loss at the end. `loss` is a Tensor containing a
-            # single value; the `.item()` function just returns the Python value
-            # from the tensor.
             batch_loss += loss.item()
-
-            # Perform a backward pass to calculate the gradients.
             loss.backward()
-
-            # Clip the norm of the gradients to 1.0.
-            # This is to help prevent the "exploding gradients" problem.
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-
-            # Update parameters and take a step using the computed gradient.
-            # The optimizer dictates the "update rule"--how the parameters are
-            # modified based on their gradients, the learning rate, etc.
             optimizer.step()
-
-            # Update the learning rate.
             scheduler.step()
 
         # Calculate the average loss over all of the batches.
@@ -237,5 +231,8 @@ if __name__ == '__main__':
             'epochs': 3
         }
     )
+    
     '''
-    train(wb_config)
+    wb_config = wandb.config
+    train_loader, val_loader = RLRC_dataloader.get_dataloader()
+    train(wb_config, train_loader, val_loader)

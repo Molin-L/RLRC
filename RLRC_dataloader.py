@@ -5,9 +5,10 @@ import torch
 import os
 from tqdm import tqdm
 from transformers import (BertTokenizer, DistilBertModel, DistilBertTokenizer)
+from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset, random_split
 
 
-def dataloader():
+def input_data():
     train_data = pd.read_csv(
         './origin_data/sentence_128_retag.txt', sep='\t', header=None)
     return train_data
@@ -15,6 +16,7 @@ def dataloader():
 
 def get_BertData():
     if os.path.exists("./data/bert_labels.pkl"):
+        print('Load Bert data from .pkl files...')
         with open('./data/bert_labels.pkl', 'rb') as f:
             # torch.tensor(train_data.iloc[:, 0])
             train_labels = pickle.load(f)
@@ -24,7 +26,7 @@ def get_BertData():
             # torch.cat(attention_masks, dim=0)
             attention_masks = pickle.load(f)
         return input_ids, attention_masks, train_labels
-    train_data = dataloader()
+    train_data = input_data()
     pretrain_model = "distilbert-base-uncased"
     tokenizer = DistilBertTokenizer.from_pretrained(
         pretrain_model, do_lower_case=False)
@@ -72,8 +74,9 @@ def get_BertData():
     return input_ids, attention_masks, train_labels
 
 
-def create_dataset(input_ids, attention_masks, train_labels):
+def create_dataset():
     # Combine the training inputs into a TensorDataset.
+    input_ids, attention_masks, train_labels = get_BertData()
     dataset = TensorDataset(input_ids, attention_masks, train_labels)
 
     # Create a 90-10 train-validation split.
@@ -84,9 +87,32 @@ def create_dataset(input_ids, attention_masks, train_labels):
 
     # Divide the dataset by randomly selecting samples.
     train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-    print('{:>5,} training samples'.format(train_size))
-    print('{:>5,} validation samples'.format(val_size))
+    print('\t{:>5,} training samples'.format(train_size))
+    print('\t{:>5,} validation samples'.format(val_size))
+
+    return train_dataset, val_dataset
+
+
+def get_dataloader(batch_size=32):
+    train_dataset, val_dataset = create_dataset()
+
+    # Create the DataLoaders for our training and validation sets.
+    # We'll take training samples in random order.
+    train_dataloader = DataLoader(
+        train_dataset,  # The training samples.
+        sampler=RandomSampler(train_dataset),  # Select batches randomly
+        batch_size=batch_size  # Trains with this batch size.
+    )
+
+    # For validation the order doesn't matter, so we'll just read them sequentially.
+    validation_dataloader = DataLoader(
+        val_dataset,  # The validation samples.
+        # Pull out batches sequentially.
+        sampler=SequentialSampler(val_dataset),
+        batch_size=batch_size  # Evaluate with this batch size.
+    )
+    return train_dataloader, validation_dataloader
 
 
 if __name__ == "__main__":
-    get_BertData()
+    get_dataloader()
