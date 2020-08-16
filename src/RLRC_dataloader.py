@@ -7,11 +7,35 @@ from tqdm import tqdm
 from transformers import (BertTokenizer, DistilBertModel, DistilBertTokenizer)
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset, random_split
 
-
-def input_data():
+def input_data(origin_data = './origin_data/train_filtered.txt'):
     train_data = pd.read_csv(
-        './origin_data/sentence_128_retag.txt', sep='\t', header=None)
+        origin_data, 
+        sep='\t')
     return train_data
+
+def get_entity_mask(input_ids, e1_id_start, e1_id_end, e2_id_start, e2_id_end):
+    if input_ids.shape != torch.Size([1, 128]):
+        print(input_ids)
+    assert input_ids.shape == torch.Size([1, 128])
+    entity1_mask = np.zeros([1, len(input_ids[0])])
+    entity2_mask = np.zeros([1, len(input_ids[0])])
+    
+    #input_ids = input_ids.numpy()
+    #e1_start = np.where(input_ids==e1_id_start)
+    try:
+        e1_start = (input_ids==e1_id_start).nonzero()[0][1].item()
+        e1_end = (input_ids==e1_id_end).nonzero()[0][1].item()
+        e2_start = (input_ids==e2_id_start).nonzero()[0][1].item()
+        e2_end = (input_ids==e2_id_end).nonzero()[0][1].item()
+        entity1_mask[0][e1_start+1:e1_end]=1
+        entity2_mask[0][e2_start+1:e2_end]=1
+        #print(entity1_mask)
+        #print(entity2_mask)
+        
+        return torch.tensor(entity1_mask), torch.tensor(entity2_mask)
+    except:
+        print(input_ids)
+        exit()
 
 
 def get_bert_tokenizer(pretrain_model="distilbert-base-uncased"):
@@ -21,29 +45,29 @@ def get_bert_tokenizer(pretrain_model="distilbert-base-uncased"):
     return tokenizer
 
 
-def get_BertData():
-    if os.path.exists("./data/bert_labels.pkl"):
-        print('Load Bert data from .pkl files...')
-        with open('./data/bert_labels.pkl', 'rb') as f:
-            # torch.tensor(train_data.iloc[:, 0])
-            train_labels = pickle.load(f)
-        with open('./data/bert_input_ids.pkl', 'rb') as f:
-            input_ids = pickle.load(f)  # torch.cat(input_ids, dim=0)
-        with open('./data/bert_attention_masks.pkl', 'rb') as f:
-            # torch.cat(attention_masks, dim=0)
-            attention_masks = pickle.load(f)
-        return input_ids, attention_masks, train_labels
+def generate_BertData(data_dir = './data'):
     print('Create BertData from scratch.')
-    train_data = input_data()
+    
     pretrain_model = "distilbert-base-uncased"
     tokenizer = get_bert_tokenizer(pretrain_model)
 
+    if data_dir == './tests':
+        train_data = input_data('./tests/data/train.txt')
+    else:
+        train_data = input_data()
     max_len = 128
     input_ids = []
     attention_masks = []
+    e1_masks = []
+    e2_masks = []
     labels = []
     num = 0
-    for sent in tqdm(train_data.iloc[:, 1]):
+    e1_id_start = tokenizer.convert_tokens_to_ids('[E1]')
+    e1_id_end = tokenizer.convert_tokens_to_ids('[/E1]')
+    e2_id_start = tokenizer.convert_tokens_to_ids('[E2]')
+    e2_id_end = tokenizer.convert_tokens_to_ids('[/E2]')
+
+    for sent in tqdm(train_data['sen']):
         encoded_dict = tokenizer.encode_plus(
             sent,
             add_special_tokens=False,
@@ -55,23 +79,49 @@ def get_BertData():
         )
         # Add the encoded sentence to the list.
         input_ids.append(encoded_dict['input_ids'])
-
+        e1, e2 = get_entity_mask(encoded_dict['input_ids'], e1_id_start, e1_id_end, e2_id_start, e2_id_end)
+        e1_masks.append(e1)
+        e2_masks.append(e2)
         # And its attention mask (simply differentiates padding from non-padding).
         attention_masks.append(encoded_dict['attention_mask'])
-    train_labels = torch.tensor(train_data.iloc[:, 0])
+    train_labels = torch.tensor(train_data['rel_id'], dtype=torch.long)
     input_ids = torch.cat(input_ids, dim=0)
     attention_masks = torch.cat(attention_masks, dim=0)
-    with open('./data/bert_labels.pkl', 'wb') as f:
+    e1_masks = torch.cat(e1_masks, dim=0)
+    e2_masks = torch.cat(e2_masks, dim=0)
+
+    '''
+    Dump result to .pkl files
+    '''
+    with open(os.path.join(data_dir, 'bert_labels.pkl'), 'wb') as f:
         pickle.dump(train_labels, f)
-
-    with open('./data/bert_input_ids.pkl', 'wb') as f:
+    with open(os.path.join(data_dir, 'bert_input_ids.pkl'), 'wb') as f:
         pickle.dump(input_ids, f)
-
-    with open('./data/bert_attention_masks.pkl', 'wb') as f:
+    with open(os.path.join(data_dir, 'bert_attention_masks.pkl'), 'wb') as f:
         pickle.dump(attention_masks, f)
+    with open(os.path.join(data_dir, 'e1_mask.pkl'), 'wb') as f:
+        pickle.dump(e1_masks, f)
+    with open(os.path.join(data_dir, 'e2_mask.pkl'), 'wb') as f:
+        pickle.dump(e2_masks, f)
+    return [
+        os.path.join(data_dir, 'bert_labels.pkl'), 
+        os.path.join(data_dir, 'bert_input_ids.pkl'),
+        os.path.join(data_dir, 'bert_attention_masks.pkl'),
+        os.path.join(data_dir, 'e1_mask.pkl'),
+        os.path.join(data_dir, 'e2_mask.pkl'),
+        ]
 
+def get_BertData(data_dir = './data'):
+    if not os.path.exists(os.path.join(data_dir, "bert_labels.pkl")):
+        generate_BertData(data_dir)
+    print('Load Bert data from .pkl files...')
+    with open(os.path.join(data_dir, "bert_labels.pkl"), 'rb') as f:
+        train_labels = pickle.load(f)
+    with open(os.path.join(data_dir, 'bert_input_ids.pkl'), 'rb') as f:
+        input_ids = pickle.load(f)
+    with open(os.path.join(data_dir, 'bert_attention_masks.pkl'), 'rb') as f:
+        attention_masks = pickle.load(f)
     return input_ids, attention_masks, train_labels
-
 
 def create_dataset():
     # Combine the training inputs into a TensorDataset.
@@ -114,4 +164,4 @@ def get_dataloader(batch_size=32):
 
 
 if __name__ == "__main__":
-    pass
+    get_BertData()

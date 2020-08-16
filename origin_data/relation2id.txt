@@ -1,4 +1,4 @@
-NA 0
+UNK 0
 /location/neighborhood/neighborhood_of 1
 /location/fr_region/capital 2
 /location/cn_province/capital 3
