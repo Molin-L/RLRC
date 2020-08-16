@@ -131,8 +131,6 @@ dmypy.json
 
 # Data
 data
-
-.DS_Store
 .vscode
 
 # Develop

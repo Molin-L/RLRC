@@ -14,6 +14,13 @@ def input_data():
     return train_data
 
 
+def get_bert_tokenizer(pretrain_model="distilbert-base-uncased"):
+    tokenizer = DistilBertTokenizer.from_pretrained(
+        pretrain_model, do_lower_case=False)
+    tokenizer.add_tokens(['[E1]', '[/E1]', '[E2]', '[/E2]'])
+    return tokenizer
+
+
 def get_BertData():
     if os.path.exists("./data/bert_labels.pkl"):
         print('Load Bert data from .pkl files...')
@@ -29,16 +36,7 @@ def get_BertData():
     print('Create BertData from scratch.')
     train_data = input_data()
     pretrain_model = "distilbert-base-uncased"
-    tokenizer = DistilBertTokenizer.from_pretrained(
-        pretrain_model, do_lower_case=False)
-    print(len(tokenizer))
-    tokenizer.add_tokens(['[E1]', '[/E1]', '[E2]', '[/E2]'])
-    print(len(tokenizer))
-    e1_id = tokenizer.convert_tokens_to_ids('[E1]')
-    e2_id = tokenizer.convert_tokens_to_ids('[E2]')
-
-    print(e1_id, e2_id)
-    assert e1_id != e2_id != 1
+    tokenizer = get_bert_tokenizer(pretrain_model)
 
     max_len = 128
     input_ids = []
@@ -116,4 +114,4 @@ def get_dataloader(batch_size=32):
 
 
 if __name__ == "__main__":
-    get_dataloader()
+    pass

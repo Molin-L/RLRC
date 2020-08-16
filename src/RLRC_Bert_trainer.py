@@ -205,7 +205,6 @@ def train(wb_config, train_dataloader, validation_dataloader):
 
 
 if __name__ == '__main__':
-
     wandb.init(
         project="RLRC_BERT",
         config={
@@ -216,21 +215,6 @@ if __name__ == '__main__':
             'epochs': 3
         }
     )
-    '''
-    class Wb_config:
-        def __init__(self, config):
-            self.config = config
-    wb_config = Wb_config(
-        config={
-            'pretrain_model': "distilbert-base-uncased",
-            'num_classes': 53,
-            'lr': 0.001,
-            'dropout': 0.5,
-            'epochs': 3
-        }
-    )
-    
-    '''
     wb_config = wandb.config
     train_loader, val_loader = RLRC_dataloader.get_dataloader()
     train(wb_config, train_loader, val_loader)
