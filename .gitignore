@@ -131,8 +131,8 @@ dmypy.json
 
 # Data
 data
+wandb
 
-.DS_Store
 .vscode
 
 # Develop

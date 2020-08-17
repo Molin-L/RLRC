@@ -1,13 +1,17 @@
 import pytest
 import os
 import sys
+import torch
 sys.path.append(".")
 import src
 #from src import RLRC_dataloader
 from src.RLRC_dataloader import (
-    get_bert_tokenizer, input_data, get_entity_mask, get_BertData, generate_BertData)
+    get_bert_tokenizer, input_data, get_entity_mask, get_BertData, generate_BertData, get_dataloader)
+
+from src.RLRC_Bert_model import RC_BERT
 import logging
 import pandas as pd
+from transformers import AdamW
 from tqdm import tqdm
 
 @pytest.fixture(scope='module')
@@ -107,4 +111,42 @@ def test_verify_dataset(set_tokenizer):
 @clean_test_files
 def test_generate_BertData():
     return generate_BertData('./tests')
+
+def test_model():
+    config = {
+        'pretrain_model': "distilbert-base-uncased",
+        'num_classes': 53,
+        'lr': 0.001,
+        'dropout': 0.5,
+        'epochs': 3,
+        'l2_reg_lambda': 5e-3
+    }
+    model = RC_BERT(config)
+    optimizer = AdamW(
+        model.parameters(),
+        lr=config['lr'],
+        eps=1e-8
+    )
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        print('There are %d GPU(s) available.' % torch.cuda.device_count())
+        print('We will use the GPU:', torch.cuda.get_device_name(0))
+    else:
+        print('No GPU available, using the CPU instead.')
+        device = torch.device("cpu")
+    model.to(device)
+    model.train()
+    input_ids, attention_masks, train_labels, e1_masks, e2_masks = get_BertData()
+    ii = input_ids[:5].to(device)
+    am = attention_masks[:5].to(device)
+    tl = train_labels[:5].to(device)
+    e1 = e1_masks[:5].to(device)
+    e2 = e2_masks[:5].to(device)
+    model.zero_grad()
+    output = model(ii, am, e1, e2, tl)
+    loss = output[0]
+    print(loss.item())
+    loss.backward()
+    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+    optimizer.step()
 

@@ -75,7 +75,7 @@ def add_label(input_df):
     trans_df = label_df.set_index(0).T
     label_dict = trans_df.to_dict('records')
     input_df['rel_id'] = input_df['rel'].replace(label_dict[0])
-    input_df['rel_id'] = input_df['rel_id'].apply(pd.to_numeric())
+    input_df['rel_id'] = input_df['rel_id'].apply(pd.to_numeric)
 
     return input_df
 

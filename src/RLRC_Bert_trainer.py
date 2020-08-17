@@ -20,9 +20,6 @@ random.seed(seed_val)
 np.random.seed(seed_val)
 torch.manual_seed(seed_val)
 torch.cuda.manual_seed_all(seed_val)
-
-# We'll store a number of quantities such as training and validation loss,
-# validation accuracy, and timings.
 training_stats = []
 
 loss_fn = nn.CrossEntropyLoss()
@@ -84,6 +81,8 @@ def train(wb_config, train_dataloader, validation_dataloader):
             b_input_ids = batch[0].to(device)
             b_input_mask = batch[1].to(device)
             b_labels = batch[2].to(device)
+            b_e1_mask = batch[3].to(device)
+            b_e2_mask = batch[4].to(device)
 
             # Always clear any previously calculated gradients before performing a
             # backward pass. PyTorch doesn't do this automatically because
@@ -98,8 +97,8 @@ def train(wb_config, train_dataloader, validation_dataloader):
             # arge given and what flags are set. For our useage here, it returns
             # the loss (because we provided labels) and the "logits"--the model
             # outputs prior to activation.
-            logits = model(b_input_ids, b_input_mask)
-            loss = loss_fn(logits, b_labels)
+            output = model(b_input_ids, b_input_mask, b_e1_mask, b_e2_mask, b_labels)
+            loss = output[0]
             batch_loss += loss.item()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -212,6 +211,8 @@ if __name__ == '__main__':
             'num_classes': 53,
             'lr': 0.001,
             'dropout': 0.5,
+            'eps': 1e-8,
+            'acceleration_step': 1,
             'epochs': 3
         }
     )
