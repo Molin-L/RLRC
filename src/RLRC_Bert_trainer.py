@@ -50,6 +50,8 @@ def train(wb_config, train_dataloader, validation_dataloader):
         device = torch.device("cpu")
     model.to(device)
     epochs = config['epochs']
+    tr_loss, logging_loss = 0.0, 0.0
+
     for epoch_i in range(config['epochs']):
         wandb.watch(model)
         print("")
@@ -99,8 +101,10 @@ def train(wb_config, train_dataloader, validation_dataloader):
             # outputs prior to activation.
             output = model(b_input_ids, b_input_mask, b_e1_mask, b_e2_mask, b_labels)
             loss = output[0]
-            batch_loss += loss.item()
+            batch_loss += loss.mean()
+            
             loss.backward()
+            tr_loss += loss.item()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
             scheduler.step()
@@ -136,6 +140,7 @@ def train(wb_config, train_dataloader, validation_dataloader):
         nb_eval_steps = 0
 
         # Evaluate data for one epoch
+        '''
         for batch in validation_dataloader:
 
             # Unpack this training batch from our dataloader.
@@ -150,6 +155,8 @@ def train(wb_config, train_dataloader, validation_dataloader):
             b_input_ids = batch[0].to(device)
             b_input_mask = batch[1].to(device)
             b_labels = batch[2].to(device)
+            b_e1_mask = batch[3].to(device)
+            b_e2_mask = batch[4].to(device)
 
             # Tell pytorch not to bother with constructing the compute graph during
             # the forward pass, since this is only needed for backprop (training).
@@ -162,9 +169,7 @@ def train(wb_config, train_dataloader, validation_dataloader):
                 # https://huggingface.co/transformers/v2.2.0/model_doc/bert.html#transformers.BertForSequenceClassification
                 # Get the "logits" output by the model. The "logits" are the output
                 # values prior to applying an activation function like the softmax.
-                logits = model(b_input_ids,
-                               attention_mask=b_input_mask,
-                               )
+                logits = modelmodel(b_input_ids, b_input_mask, b_e1_mask, b_e2_mask, b_labels)
             loss = loss_fn(logits, b_labels)
             # Accumulate the validation loss.
             total_eval_loss += loss.item()
@@ -176,7 +181,7 @@ def train(wb_config, train_dataloader, validation_dataloader):
             # Calculate the accuracy for this batch of test sentences, and
             # accumulate it over all batches.
             total_eval_accuracy += flat_accuracy(logits, label_ids)
-
+        '''
         # Report the final accuracy for this validation run.
         avg_val_accuracy = total_eval_accuracy / len(validation_dataloader)
         print("  Accuracy: {0:.2f}".format(avg_val_accuracy))
