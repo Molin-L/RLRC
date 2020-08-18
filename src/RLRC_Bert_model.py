@@ -37,14 +37,14 @@ class RC_BERT(nn.Module):
             self.Bert = DistilBertModel.from_pretrained(
                 'distilbert-base-uncased',
                 num_labels=self.config['num_classes'],
-                output_attentions=False,
+                output_attentions=True,
                 output_hidden_states=False
             )
         else:
             self.Bert = BertForSequenceClassification.from_pretrained(
                 "bert-base-uncased", 
                 num_labels=self.config['num_classes'],
-                output_attentions=False,
+                output_attentions=True,
                 output_hidden_states=False
             )
         # Test which is prefered, sequeantial classifier or cnn
@@ -78,28 +78,22 @@ class RC_BERT(nn.Module):
         '''
 
     def forward(self, input_ids, attention_mask=None, e1_mask=None, e2_mask=None, labels=None):
-        outputs = self.Bert(input_ids=input_ids, attention_mask=attention_mask)
+        outputs, attention_mask_output = self.Bert(input_ids=input_ids, attention_mask=attention_mask)
         sequence_output = outputs[0][:, :, :]
         pooled_output = outputs[0][:, 0, :]
         #sequence_output = outputs[0][0]
-        #
-        
-        
+        print(len(attention_mask_output))
         
         def extract_entity(sequence_output, e_mask):
             extended_e_mask = e_mask.unsqueeze(1)
-            
             extended_e_mask = torch.bmm(
                 extended_e_mask.float(), sequence_output).squeeze(1)
             return extended_e_mask.float()
         e1_h = extract_entity(sequence_output, e1_mask)
         e2_h = extract_entity(sequence_output, e2_mask)
         context = self.dropout(pooled_output)
-        
-        
-        
         pooled_output = torch.cat([context, e1_h, e2_h], dim=-1)
-
+        print(pooled_output.size())
         
         logits = self.classifier(pooled_output)
 
@@ -141,12 +135,19 @@ class RC_BERT(nn.Module):
                 loss += per_example_loss + 5 * rc_loss
 
             outputs = (loss,) + outputs
-
+        
         return outputs
     def save(self, save_dir='./out'):
         with open(os.path.join(save_dir, 'model.pth'), 'wb') as f:
             torch.save(self.state_dict(), f)
         
+
+class Interaction():
+
+    def __init__(self, config):
+        self.model = config['model']
+    
+    def reward(self, batch_input_ids, batch_attention_masks, batch_train_labels, batch_e1_masks, batch_e2_masks):
 
 
 if __name__ == "__main__":

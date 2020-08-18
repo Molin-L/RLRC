@@ -47,8 +47,8 @@ def _add_entity_tag(row):
 
 def prepare_bert_data(dataPath):
     max_len = 110
-    full_data = pd.read_csv(dataPath, header=None, sep='\t').iloc[:, 2:]
-    full_data.columns = ['e1', 'e2', 'rel', 'sen']
+    full_data = pd.read_csv(dataPath, header=None, sep='\t')
+    full_data.columns = ['e1_id', 'e2_id', 'e1', 'e2', 'rel', 'sen']
     tokenizer = get_bert_tokenizer()
     tagged_sen = []
     row_list = []
@@ -63,7 +63,7 @@ def prepare_bert_data(dataPath):
     
     cleaned_df = pd.DataFrame(row_list)
     cleaned_df = cleaned_df.fillna(value='UNK')
-    cleaned_df = cleaned_df.iloc[:, 2:]
+    cleaned_df = cleaned_df
     cleaned_df = add_label(cleaned_df)
     print(cleaned_df.describe())
     cleaned_df.to_csv(dataPath[:-4]+'_filtered.txt', index=False, sep='\t')

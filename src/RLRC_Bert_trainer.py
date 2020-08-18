@@ -51,35 +51,19 @@ def train(wb_config, train_dataloader, validation_dataloader):
     model.to(device)
     epochs = config['epochs']
     tr_loss, logging_loss = 0.0, 0.0
-
+    wandb.watch(model)
     for epoch_i in range(config['epochs']):
-        wandb.watch(model)
+        
         print("")
         print('======== Epoch {:} / {:} ========'.format(epoch_i + 1, epochs))
         print('Training...')
-        t0 = time.time()
         total_loss, batch_loss, batch_counts = 0, 0, 0
         model.train()
-        for step, batch in enumerate(tqdm(train_dataloader)):
+        for step, batch in enumerate(tqdm(train_dataloader, 
+                           desc='epoch {}, loss=0.000000, accuracy=0.000000'.format(epoch))):
             # Progress update every 40 batches.
             batch_counts += 1
-            if step % 40 == 0 and not step == 0:
-                # Calculate elapsed time in minutes.
-                elapsed = format_time(time.time() - t0)
 
-                # Report progress.
-                print('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.'.format(
-                    step, len(train_dataloader), elapsed))
-
-            # Unpack this training batch from our dataloader.
-            #
-            # As we unpack the batch, we'll also copy each tensor to the GPU using the
-            # `to` method.
-            #
-            # `batch` contains three pytorch tensors:
-            #   [0]: input ids
-            #   [1]: attention masks
-            #   [2]: labels
             b_input_ids = batch[0].to(device)
             b_input_mask = batch[1].to(device)
             b_labels = batch[2].to(device)
@@ -102,7 +86,8 @@ def train(wb_config, train_dataloader, validation_dataloader):
             output = model(b_input_ids, b_input_mask, b_e1_mask, b_e2_mask, b_labels)
             loss = output[0]
             batch_loss += loss.mean()
-            
+            wandb.log({'loss':loss.mean()})
+            #bar.set_description('epoch {} loss={:.6f} accuracy={:.6f}'.format(epoch, loss, accuracy))
             loss.backward()
             tr_loss += loss.item()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -111,9 +96,6 @@ def train(wb_config, train_dataloader, validation_dataloader):
 
         # Calculate the average loss over all of the batches.
         avg_train_loss = batch_loss / batch_counts
-
-        # Measure how long this epoch took.
-        training_time = format_time(time.time() - t0)
 
         print("")
         print("  Average training loss: {0:.2f}".format(avg_train_loss))
@@ -128,7 +110,6 @@ def train(wb_config, train_dataloader, validation_dataloader):
         print("")
         print("Running Validation...")
 
-        t0 = time.time()
 
         # Put the model in evaluation mode--the dropout layers behave differently
         # during evaluation.
@@ -189,11 +170,8 @@ def train(wb_config, train_dataloader, validation_dataloader):
         # Calculate the average loss over all of the batches.
         avg_val_loss = total_eval_loss / len(validation_dataloader)
 
-        # Measure how long the validation run took.
-        validation_time = format_time(time.time() - t0)
 
         print("  Validation Loss: {0:.2f}".format(avg_val_loss))
-        print("  Validation took: {:}".format(validation_time))
 
         # Record all statistics from this epoch.
         training_stats.append(
@@ -218,7 +196,8 @@ if __name__ == '__main__':
             'dropout': 0.5,
             'eps': 1e-8,
             'acceleration_step': 1,
-            'epochs': 3
+            'epochs': 3,
+            'l2_reg_lambda': 5e-3
         }
     )
     wb_config = wandb.config
