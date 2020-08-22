@@ -27,8 +27,8 @@ def _add_entity_tag(row):
         if j == row['e1']:
             has_e1=True
             tmp = i+len(update_list_e1)+len(update_list_e2)
-            out_token_sen.insert(tmp, '[E1]')
-            out_token_sen.insert(tmp+2, '[/E1]')
+            out_token_sen.insert(tmp, '<e1>')
+            out_token_sen.insert(tmp+2, '</e1>')
             
             update_list_e1.append(tmp)
             update_list_e1.append(tmp+2)
@@ -37,8 +37,8 @@ def _add_entity_tag(row):
             tmp = i+len(update_list_e1)+len(update_list_e2)
             update_list_e2.append(tmp)
             update_list_e2.append(tmp+2)
-            out_token_sen.insert(tmp, '[E2]')
-            out_token_sen.insert(tmp+2, '[/E2]')
+            out_token_sen.insert(tmp, '<e2>')
+            out_token_sen.insert(tmp+2, '</e2>')
     temp_row = copy.deepcopy(row)
     temp_row['sen'] = ' '.join(out_token_sen)
     if not (has_e1 and has_e2):
@@ -79,4 +79,6 @@ def add_label(input_df):
 
     return input_df
 
+def convert2SemEval2010(input_file):
+    pd.read_csv(input_file, sep='\t')
 prepare_bert_data('./origin_data/train.txt')

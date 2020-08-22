@@ -1,7 +1,7 @@
 import pytest
 import os
-import sys
 import torch
+import sys
 sys.path.append(".")
 import src
 #from src import RLRC_dataloader
@@ -35,14 +35,14 @@ def test_load_data():
 
 def test_tokenizer_entity(set_tokenizer):
     tokenizer = set_tokenizer
-    e1_id = tokenizer.convert_tokens_to_ids('[E1]')
-    e2_id = tokenizer.convert_tokens_to_ids('[E2]')
+    e1_id = tokenizer.convert_tokens_to_ids('<e1>')
+    e2_id = tokenizer.convert_tokens_to_ids('<e2>')
     assert e1_id != e2_id != 1
 
 
 def test_tokenizer_encode_plus(set_tokenizer):
     tokenizer = set_tokenizer
-    sent = "[CLS] he is a son of vera and william lichtenberg of [E2] belle_harbor [/E2] , [E1] queens [/E1] . [SEP]"
+    sent = "[CLS] he is a son of vera and william lichtenberg of <e2> belle_harbor </e2> , <e1> queens </e1> . [SEP]"
     encoded_dict = tokenizer.encode_plus(
         sent,
         add_special_tokens=False,
@@ -54,15 +54,15 @@ def test_tokenizer_encode_plus(set_tokenizer):
         return_special_tokens_mask=True
     )
     print(' '.join(tokenizer.tokenize(sent)))
-    e1_id = tokenizer.convert_tokens_to_ids('[E1]')
-    e2_id = tokenizer.convert_tokens_to_ids('[E2]')
+    e1_id = tokenizer.convert_tokens_to_ids('<e1>')
+    e2_id = tokenizer.convert_tokens_to_ids('<e2>')
     print(e1_id)
     print(encoded_dict.input_ids)
     print(encoded_dict.special_tokens_mask)
 
 def test_get_entity_mask():
     tokenizer = get_bert_tokenizer()
-    sent = "[CLS] sen. charles e. schumer called on federal safety officials yesterday to reopen their investigation into the fatal crash of a passenger jet in [E2] belle_harbor [/E2] , [E1] queens [/E1] , because equipment failure , not pilot error , might have been the cause . [SEP]"
+    sent = "[CLS] sen. charles e. schumer called on federal safety officials yesterday to reopen their investigation into the fatal crash of a passenger jet in <e2> belle_harbor </e2> , <e1> queens </e1> , because equipment failure , not pilot error , might have been the cause . [SEP]"
     encoded_dict = tokenizer.encode_plus(
         sent,
         add_special_tokens=False,
@@ -73,10 +73,10 @@ def test_get_entity_mask():
         truncation=True,
         return_special_tokens_mask=True
     )
-    e1_id_start = tokenizer.convert_tokens_to_ids('[E1]')
-    e1_id_end = tokenizer.convert_tokens_to_ids('[/E1]')
-    e2_id_start = tokenizer.convert_tokens_to_ids('[E2]')
-    e2_id_end = tokenizer.convert_tokens_to_ids('[/E2]')
+    e1_id_start = tokenizer.convert_tokens_to_ids('<e1>')
+    e1_id_end = tokenizer.convert_tokens_to_ids('</e1>')
+    e2_id_start = tokenizer.convert_tokens_to_ids('<e2>')
+    e2_id_end = tokenizer.convert_tokens_to_ids('</e2>')
     e1_mask, e2_mask = get_entity_mask(encoded_dict.input_ids, e1_id_start, e1_id_end, e2_id_start, e2_id_end)
     assert e1_mask.shape == e2_mask.shape == encoded_dict.input_ids.shape
 
@@ -89,10 +89,10 @@ def test_verify_dataset(set_tokenizer):
 
     max_len = 128
     num = 0
-    e1_id_start = tokenizer.convert_tokens_to_ids('[E1]')
-    e1_id_end = tokenizer.convert_tokens_to_ids('[/E1]')
-    e2_id_start = tokenizer.convert_tokens_to_ids('[E2]')
-    e2_id_end = tokenizer.convert_tokens_to_ids('[/E2]')
+    e1_id_start = tokenizer.convert_tokens_to_ids('<e1>')
+    e1_id_end = tokenizer.convert_tokens_to_ids('</e1>')
+    e2_id_start = tokenizer.convert_tokens_to_ids('<e2>')
+    e2_id_end = tokenizer.convert_tokens_to_ids('</e2>')
 
     for sent in train_data['sen']:
         encoded_dict = tokenizer.encode_plus(

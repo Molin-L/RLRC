@@ -43,7 +43,7 @@ def get_bert_tokenizer(pretrain_model="distilbert-base-uncased", model='distilbe
             pretrain_model, do_lower_case=False)
     elif model == "bert-base-uncased":
         tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=False)
-    tokenizer.add_tokens(['[E1]', '[/E1]', '[E2]', '[/E2]'])
+    tokenizer.add_tokens(['<e1>', '</e1>', '<e2>', '</e2>'])
     return tokenizer
 
 
@@ -67,10 +67,10 @@ def generate_BertData(data_dir = './data', model='distilbert-base-uncased'):
     e2_masks = []
     labels = []
     num = 0
-    e1_id_start = tokenizer.convert_tokens_to_ids('[E1]')
-    e1_id_end = tokenizer.convert_tokens_to_ids('[/E1]')
-    e2_id_start = tokenizer.convert_tokens_to_ids('[E2]')
-    e2_id_end = tokenizer.convert_tokens_to_ids('[/E2]')
+    e1_id_start = tokenizer.convert_tokens_to_ids('<e1>')
+    e1_id_end = tokenizer.convert_tokens_to_ids('</e1>')
+    e2_id_start = tokenizer.convert_tokens_to_ids('<e2>')
+    e2_id_end = tokenizer.convert_tokens_to_ids('</e2>')
 
     for sent in tqdm(train_data['sen']):
         encoded_dict = tokenizer.encode_plus(

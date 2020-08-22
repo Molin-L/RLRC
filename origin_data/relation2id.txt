@@ -51,4 +51,3 @@ UNK 0
 /people/person/children 50
 /film/film_location/featured_in_films 51
 /film/film_festival/location 52
-/people/ethnicity/includes_groups 25

@@ -15,7 +15,7 @@ import configparser
 from collections import OrderedDict
 from transformers import (BertTokenizer, DistilBertModel, DistilBertTokenizer, BertPreTrainedModel, BertModel, BertForSequenceClassification)
 from torch.nn import MSELoss, CrossEntropyLoss
-additional_special_tokens = ['[E1]', '[/E1]', '[E2]', '[/E2]']
+additional_special_tokens = ['<e1>', '</e1>', '<e2>', '</e2>']
 
 def l2_loss(parameters):
     return torch.sum(
@@ -63,9 +63,9 @@ class RC_BERT(nn.Module):
         self.dropout = nn.Dropout(0.5)
         self.tokenizer = DistilBertTokenizer.from_pretrained(
             self.config['pretrain_model'], do_lower_case=False)
-        self.tokenizer.add_tokens(['[E1]', '[/E1]', '[E2]', '[/E2]'])
-        e1_id = self.tokenizer.convert_tokens_to_ids('[E1]')
-        e2_id = self.tokenizer.convert_tokens_to_ids('[E2]')
+        self.tokenizer.add_tokens(['<e1>', '</e1>', '<e2>', '</e2>'])
+        e1_id = self.tokenizer.convert_tokens_to_ids('<e1>')
+        e2_id = self.tokenizer.convert_tokens_to_ids('<e2>')
         assert e1_id != e2_id != 1
         self.Bert.resize_token_embeddings(len(self.tokenizer))
         self.Bert.cuda()
