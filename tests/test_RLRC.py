@@ -42,7 +42,7 @@ def test_tokenizer_entity(set_tokenizer):
 
 def test_tokenizer_encode_plus(set_tokenizer):
     tokenizer = set_tokenizer
-    sent = "[CLS] sen. charles e. schumer called on federal safety officials yesterday to reopen their investigation into the fatal crash of a passenger jet in [E2] belle_harbor [/E2] , [E1] queens [/E1] , because equipment failure , not pilot error , might have been the cause . [SEP]"
+    sent = "[CLS] he is a son of vera and william lichtenberg of [E2] belle_harbor [/E2] , [E1] queens [/E1] . [SEP]"
     encoded_dict = tokenizer.encode_plus(
         sent,
         add_special_tokens=False,
@@ -53,6 +53,7 @@ def test_tokenizer_encode_plus(set_tokenizer):
         truncation=True,
         return_special_tokens_mask=True
     )
+    print(' '.join(tokenizer.tokenize(sent)))
     e1_id = tokenizer.convert_tokens_to_ids('[E1]')
     e2_id = tokenizer.convert_tokens_to_ids('[E2]')
     print(e1_id)

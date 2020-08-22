@@ -1,4 +1,3 @@
-# !/usr/bin/env python
 # --------------------------------------------------------------
 # File:          RLRC_model.py
 # Project:       RLRC
@@ -37,14 +36,14 @@ class RC_BERT(nn.Module):
             self.Bert = DistilBertModel.from_pretrained(
                 'distilbert-base-uncased',
                 num_labels=self.config['num_classes'],
-                output_attentions=True,
+                output_attentions=False,
                 output_hidden_states=False
             )
         else:
             self.Bert = BertForSequenceClassification.from_pretrained(
                 "bert-base-uncased", 
                 num_labels=self.config['num_classes'],
-                output_attentions=True,
+                output_attentions=False,
                 output_hidden_states=False
             )
         # Test which is prefered, sequeantial classifier or cnn
@@ -78,11 +77,10 @@ class RC_BERT(nn.Module):
         '''
 
     def forward(self, input_ids, attention_mask=None, e1_mask=None, e2_mask=None, labels=None):
-        outputs, attention_mask_output = self.Bert(input_ids=input_ids, attention_mask=attention_mask)
+        outputs = self.Bert(input_ids=input_ids, attention_mask=attention_mask)
         sequence_output = outputs[0][:, :, :]
         pooled_output = outputs[0][:, 0, :]
         #sequence_output = outputs[0][0]
-        print(len(attention_mask_output))
         
         def extract_entity(sequence_output, e_mask):
             extended_e_mask = e_mask.unsqueeze(1)
@@ -148,7 +146,7 @@ class Interaction():
         self.model = config['model']
     
     def reward(self, batch_input_ids, batch_attention_masks, batch_train_labels, batch_e1_masks, batch_e2_masks):
-
+        pass
 
 if __name__ == "__main__":
     config = {

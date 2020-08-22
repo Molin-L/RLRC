@@ -1,6 +1,5 @@
-# Reinforcement Learning for Relation Classification from Noisy Data
+# Reinforcement Learning for Relation Classification using BERT from Noisy Data
 
-This is a Pytorch implementation of the AAAI 2018 paper: "Reinforcement Learning for Relation Classification from Noisy Data".
 
 ## Reference
 
